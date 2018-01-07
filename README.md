@@ -31,9 +31,13 @@ Configuration Screenshot
 
 The above screenshot demonstrates the flexibility of authentication nodes by generating a very (VERY!) simple device fingerprinting journey using granular authentication nodes. By storing the user's current browser in the authentication shared state and comparing it against the previous browser used to authenticate as stored in the user's profile we are able to increase or decrease their authentication level, before storing the new previous browser value in the profile.
 
+## Installation
+
 Copy the .jar file from the ../target directory into the ../web-container/webapps/openam/WEB-INF/lib directory where AM is deployed.  Restart the web container to pick up the new node.  The node will then appear in the authentication trees components palette.
-        
-The code in this repository has binary dependencies that live in the ForgeRock maven repository. Maven can be configured to authenticate to this repository by following the following [ForgeRock Knowledge Base Article](https://backstage.forgerock.com/knowledge/kb/article/a74096897).        
+
+## Disclaimer
+
+The code in this repository has binary dependencies that live in the ForgeRock maven repository. Maven can be configured to authenticate to this repository by following the following [ForgeRock Knowledge Base Article](https://backstage.forgerock.com/knowledge/kb/article/a74096897).
         
 The sample code described herein is provided on an "as is" basis, without warranty of any kind, to the fullest extent permitted by law. ForgeRock does not warrant or guarantee the individual success developers may have in implementing the sample code on their development platforms or in production configurations.
 
