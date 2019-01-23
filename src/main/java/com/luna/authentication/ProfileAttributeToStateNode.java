@@ -26,6 +26,7 @@ import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchResults;
 import com.sun.identity.idm.IdType;
+import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.RequiredValueValidator;
 
 import org.forgerock.json.JsonValue;
@@ -131,7 +132,7 @@ public class ProfileAttributeToStateNode extends SingleOutcomeNode {
 
     private AMIdentity getIdentity(String username, String realm) throws IdRepoException, SSOException {
         AMIdentityRepository idrepo = coreWrapper.getAMIdentityRepository(
-                coreWrapper.convertRealmNameToOrgName(realm));
+                DNMapper.orgNameToDN(realm));
         IdSearchControl idSearchControl = new IdSearchControl();
         idSearchControl.setAllReturnAttributes(true);
 
