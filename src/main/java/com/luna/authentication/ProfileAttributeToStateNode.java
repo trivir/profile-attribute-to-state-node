@@ -34,6 +34,8 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.utils.CrestQuery;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 
@@ -53,6 +55,7 @@ public class ProfileAttributeToStateNode extends SingleOutcomeNode {
 
     private final Config config;
     private final CoreWrapper coreWrapper;
+    private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
      * Configuration for the node.
@@ -84,14 +87,21 @@ public class ProfileAttributeToStateNode extends SingleOutcomeNode {
 
         JsonValue sharedState = context.sharedState.copy();
 
+        AMIdentity user = getIdentity(context.sharedState.get(USERNAME).asString(),
+                context.sharedState.get(REALM).asString());
+        if (user == null) {
+            return goToNext().replaceSharedState(sharedState).build();
+        }
+
         for (Map.Entry<String, String> entry : config.keys().entrySet()) {
             Set value;
             String storageLocation = entry.getValue();
 
             try {
-                value = getValueForKeyFromProfile(entry.getKey(), context);
+                value = user.getAttribute(entry.getKey());
             } catch (IdRepoException | SSOException e) {
-                throw new NodeProcessException("Error retrieving value from user's profile.");
+                throw new NodeProcessException("Error retrieving value from user " +
+                        context.sharedState.get(USERNAME).asString() + " profile.", e);
             }
 
             Object selectedValue;
@@ -124,20 +134,31 @@ public class ProfileAttributeToStateNode extends SingleOutcomeNode {
         }
     }
 
-    private Set getValueForKeyFromProfile(String key, TreeContext context) throws IdRepoException, SSOException {
-        AMIdentity user = getIdentity(context.sharedState.get(USERNAME).asString(),
-                context.sharedState.get(REALM).asString());
-        return user.getAttribute(key);
-    }
-
-    private AMIdentity getIdentity(String username, String realm) throws IdRepoException, SSOException {
+    private AMIdentity getIdentity(String username, String realm) throws NodeProcessException {
         AMIdentityRepository idrepo = coreWrapper.getAMIdentityRepository(
                 DNMapper.orgNameToDN(realm));
         IdSearchControl idSearchControl = new IdSearchControl();
         idSearchControl.setAllReturnAttributes(true);
 
-        IdSearchResults idSearchResults = idrepo.searchIdentities(IdType.USER,
-                new CrestQuery(username), idSearchControl);
+        IdSearchResults idSearchResults;
+        try {
+            idSearchResults = idrepo.searchIdentities(IdType.USER, new CrestQuery(username), idSearchControl);
+        } catch (IdRepoException e) {
+            throw new NodeProcessException("Error retrieving value from user's profile.");
+        } catch (SSOException e) {
+            throw new NodeProcessException("Error retrieving value from user's profile.");
+        }
+
+        if (idSearchResults.getSearchResults().size() != 1) {
+            if (idSearchResults.getSearchResults().size() == 0) {
+                logger.warn("No profile found for {} in realm {}.", username, realm);
+            } else {
+                logger.warn("{} profiles found for {} in realm {}.", idSearchResults.getSearchResults().size(),
+                        username, realm);
+            }
+            return null;
+        }
+
         return (AMIdentity) idSearchResults.getSearchResults().iterator().next();
     }
 
